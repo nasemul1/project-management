@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ProjectDetail from './pages/ProjectDetail';
+import BugReports from './pages/BugReports';
 
 function App() {
   return (
@@ -27,6 +28,14 @@ function App() {
             element={
               <PrivateRoute>
                 <ProjectDetail />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/bug-reports"
+            element={
+              <PrivateRoute>
+                <BugReports />
               </PrivateRoute>
             }
           />

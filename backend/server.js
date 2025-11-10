@@ -5,6 +5,9 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import commentRoutes from './routes/commentRoutes.js';
+import bugReportRoutes from './routes/bugReportRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -27,6 +30,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/bug-reports', bugReportRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

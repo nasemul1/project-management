@@ -5,11 +5,13 @@ import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import * as projectService from '../services/projectService';
 import * as taskService from '../services/taskService';
+import * as userService from '../services/userService';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -20,11 +22,21 @@ const ProjectDetail = () => {
     dueDate: '',
     assignedTo: ''
   });
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, canManageProjects, isProjectManager, user } = useAuth();
 
   useEffect(() => {
     fetchProjectAndTasks();
+    fetchUsers();
   }, [id]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await userService.getUsers();
+      setUsers(response.data);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    }
+  };
 
   const fetchProjectAndTasks = async () => {
     try {
@@ -77,6 +89,12 @@ const ProjectDetail = () => {
   const canUpdateTask = (task) => {
     if (isAdmin()) return true;
     return task.assignedTo?._id === user._id;
+  };
+
+  const canUpdateStatus = (task) => {
+    // Project managers cannot update status, only admins and assigned members
+    if (isProjectManager()) return false;
+    return canUpdateTask(task);
   };
 
   if (loading) {
@@ -145,7 +163,7 @@ const ProjectDetail = () => {
         <div className="card">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Tasks</h2>
-            {isAdmin() && (
+            {canManageProjects() && (
               <button
                 onClick={() => setShowModal(true)}
                 className="btn btn-primary"
@@ -158,7 +176,7 @@ const ProjectDetail = () => {
           {tasks.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">No tasks yet</p>
-              {isAdmin() && (
+              {canManageProjects() && (
                 <button
                   onClick={() => setShowModal(true)}
                   className="mt-4 btn btn-primary"
@@ -212,7 +230,7 @@ const ProjectDetail = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {canUpdateTask(task) ? (
+                        {canUpdateStatus(task) ? (
                           <select
                             value={task.status}
                             onChange={(e) => handleStatusChange(task._id, e.target.value)}
@@ -232,7 +250,7 @@ const ProjectDetail = () => {
                         {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
                       </td>
                       <td className="px-6 py-4">
-                        {isAdmin() && (
+                        {canManageProjects() && (
                           <button
                             onClick={() => handleDeleteTask(task._id)}
                             className="text-red-600 hover:text-red-800 text-sm font-medium"
@@ -279,20 +297,26 @@ const ProjectDetail = () => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="input"
               rows="3"
+              required
             ></textarea>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Assign To (User ID - Optional)
+              Assign To (Optional)
             </label>
-            <input
-              type="text"
+            <select
               value={formData.assignedTo}
               onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
               className="input"
-              placeholder="Enter user ID"
-            />
+            >
+              <option value="">-- Unassigned --</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name} ({u.email})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

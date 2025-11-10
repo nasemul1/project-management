@@ -4,14 +4,18 @@ import {
   getTask,
   createTask,
   updateTask,
-  deleteTask
+  deleteTask,
+  getMyTasks
 } from '../controllers/taskController.js';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import { protect, adminOnly, projectManagerOrAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
-  .post(protect, adminOnly, createTask);
+  .post(protect, projectManagerOrAdmin, createTask);
+
+router.route('/my-tasks')
+  .get(protect, getMyTasks);
 
 router.route('/project/:projectId')
   .get(protect, getTasksByProject);
@@ -19,6 +23,6 @@ router.route('/project/:projectId')
 router.route('/:id')
   .get(protect, getTask)
   .put(protect, updateTask)
-  .delete(protect, adminOnly, deleteTask);
+  .delete(protect, projectManagerOrAdmin, deleteTask);
 
 export default router;

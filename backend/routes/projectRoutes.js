@@ -6,13 +6,13 @@ import {
   updateProject,
   deleteProject
 } from '../controllers/projectController.js';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import { protect, adminOnly, projectManagerOrAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(protect, getProjects)
-  .post(protect, adminOnly, createProject);
+  .post(protect, projectManagerOrAdmin, createProject);
 
 router.route('/:id')
   .get(protect, getProject)

@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'member'],
+    enum: ['admin', 'project-manager', 'member'],
     default: 'member'
   },
   profileImage: {

@@ -41,6 +41,15 @@ export const adminOnly = (req, res, next) => {
   }
 };
 
+// Project Manager or Admin middleware
+export const projectManagerOrAdmin = (req, res, next) => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'project-manager')) {
+    next();
+  } else {
+    res.status(403).json({ success: false, message: 'Access denied. Admin or Project Manager only.' });
+  }
+};
+
 // Generate JWT token
 export const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {

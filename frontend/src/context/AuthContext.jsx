@@ -52,12 +52,22 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'admin';
   };
 
+  const isProjectManager = () => {
+    return user?.role === 'project-manager';
+  };
+
+  const canManageProjects = () => {
+    return user?.role === 'admin' || user?.role === 'project-manager';
+  };
+
   const value = {
     user,
     login,
     register,
     logout,
     isAdmin,
+    isProjectManager,
+    canManageProjects,
     loading
   };
 
