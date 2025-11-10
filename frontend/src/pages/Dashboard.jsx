@@ -4,9 +4,11 @@ import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import * as projectService from '../services/projectService';
+import * as taskService from '../services/taskService';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState([]);
+  const [myTasks, setMyTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -16,10 +18,13 @@ const Dashboard = () => {
     status: 'planning',
     endDate: ''
   });
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   useEffect(() => {
     fetchProjects();
+    if (!isAdmin()) {
+      fetchMyTasks();
+    }
   }, []);
 
   const fetchProjects = async () => {
@@ -31,6 +36,15 @@ const Dashboard = () => {
       setError('Failed to load projects');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMyTasks = async () => {
+    try {
+      const response = await taskService.getMyTasks();
+      setMyTasks(response.data);
+    } catch (err) {
+      console.error('Failed to load tasks:', err);
     }
   };
 
@@ -57,6 +71,15 @@ const Dashboard = () => {
     }
   };
 
+  const handleStatusChange = async (taskId, newStatus) => {
+    try {
+      await taskService.updateTask(taskId, { status: newStatus });
+      fetchMyTasks();
+    } catch (err) {
+      setError('Failed to update task status');
+    }
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       planning: 'bg-yellow-100 text-yellow-800',
@@ -80,6 +103,80 @@ const Dashboard = () => {
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* My Tasks Section for Members */}
+        {!isAdmin() && myTasks.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">My Assigned Tasks</h2>
+            <div className="card">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Task
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Project
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Priority
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Due Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {myTasks.map((task) => (
+                      <tr key={task._id}>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {task.title}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {task.description}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          <Link
+                            to={`/projects/${task.projectId._id}`}
+                            className="text-primary-600 hover:text-primary-700"
+                          >
+                            {task.projectId?.title || 'View Project'}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`badge badge-${task.priority}`}>
+                            {task.priority}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleStatusChange(task._id, e.target.value)}
+                            className="text-sm border border-gray-300 rounded px-2 py-1"
+                          >
+                            <option value="todo">To Do</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="done">Done</option>
+                          </select>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Projects Section */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
           {isAdmin() && (

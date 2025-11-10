@@ -5,11 +5,13 @@ import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import * as projectService from '../services/projectService';
 import * as taskService from '../services/taskService';
+import * as userService from '../services/userService';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -24,7 +26,17 @@ const ProjectDetail = () => {
 
   useEffect(() => {
     fetchProjectAndTasks();
+    fetchUsers();
   }, [id]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await userService.getUsers();
+      setUsers(response.data);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    }
+  };
 
   const fetchProjectAndTasks = async () => {
     try {
@@ -271,18 +283,23 @@ const ProjectDetail = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="input"
-              rows="3"
-            ></textarea>
-          </div>
-
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Assign To (Optional)
+            </label>
+            <select
+              value={formData.assignedTo}
+              onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+              className="input"
+            >
+              <option value="">-- Unassigned --</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name} ({u.email})
+                </option>
+              ))}
+            </select>
+          </div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Assign To (User ID - Optional)
             </label>

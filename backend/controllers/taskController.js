@@ -1,6 +1,23 @@
 import Task from '../models/Task.js';
 import Project from '../models/Project.js';
 
+// @desc    Get my assigned tasks
+// @route   GET /api/tasks/my-tasks
+// @access  Private
+export const getMyTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find({ assignedTo: req.user._id })
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email')
+      .populate('projectId', 'title')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, data: tasks });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Get tasks by project
 // @route   GET /api/tasks/project/:projectId
 // @access  Private
@@ -54,7 +71,7 @@ export const createTask = async (req, res) => {
       title,
       description,
       projectId,
-      assignedTo,
+      assignedTo: assignedTo || undefined, // Don't save empty string
       createdBy: req.user._id,
       priority: priority || 'medium',
       dueDate
