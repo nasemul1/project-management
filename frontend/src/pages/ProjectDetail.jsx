@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
+import Drawer from '../components/Drawer';
 import { useAuth } from '../context/AuthContext';
 import * as projectService from '../services/projectService';
 import * as taskService from '../services/taskService';
@@ -15,6 +16,8 @@ const ProjectDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({ title: '', assignedTo: '', priority: '', status: '' });
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -97,6 +100,20 @@ const ProjectDetail = () => {
     return canUpdateTask(task);
   };
 
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const matchesTitle = filters.title
+        ? (task.title || '').toLowerCase().includes(filters.title.toLowerCase())
+        : true;
+      const matchesAssignee = filters.assignedTo
+        ? task.assignedTo?._id === filters.assignedTo
+        : true;
+      const matchesPriority = filters.priority ? task.priority === filters.priority : true;
+      const matchesStatus = filters.status ? task.status === filters.status : true;
+      return matchesTitle && matchesAssignee && matchesPriority && matchesStatus;
+    });
+  }, [tasks, filters]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -163,14 +180,22 @@ const ProjectDetail = () => {
         <div className="card">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Tasks</h2>
-            {canManageProjects() && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowModal(true)}
-                className="btn btn-primary"
+                onClick={() => setIsFilterOpen(true)}
+                className="btn btn-secondary"
               >
-                + Add Task
+                Filter
               </button>
-            )}
+              {canManageProjects() && (
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="btn btn-primary"
+                >
+                  + Add Task
+                </button>
+              )}
+            </div>
           </div>
 
           {tasks.length === 0 ? (
@@ -184,6 +209,10 @@ const ProjectDetail = () => {
                   Create First Task
                 </button>
               )}
+            </div>
+          ) : filteredTasks.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No tasks match selected filters</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -211,7 +240,7 @@ const ProjectDetail = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {tasks.map((task) => (
+                  {filteredTasks.map((task) => (
                     <tr key={task._id}>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">
@@ -360,6 +389,77 @@ const ProjectDetail = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Filter Drawer */}
+      <Drawer isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filter Tasks">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <input
+              type="text"
+              value={filters.title}
+              onChange={(e) => setFilters((f) => ({ ...f, title: e.target.value }))}
+              placeholder="Search by title"
+              className="input"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Assignee</label>
+            <select
+              value={filters.assignedTo}
+              onChange={(e) => setFilters((f) => ({ ...f, assignedTo: e.target.value }))}
+              className="input"
+            >
+              <option value="">Any</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+            <select
+              value={filters.priority}
+              onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
+              className="input"
+            >
+              <option value="">Any</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+              className="input"
+            >
+              <option value="">Any</option>
+              <option value="todo">To Do</option>
+              <option value="in-progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <button
+              onClick={() => setFilters({ title: '', assignedTo: '', priority: '', status: '' })}
+              className="btn btn-secondary"
+            >
+              Clear
+            </button>
+            <button
+              onClick={() => setIsFilterOpen(false)}
+              className="btn btn-primary"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 };
